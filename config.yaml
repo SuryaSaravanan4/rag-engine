@@ -1,0 +1,20 @@
+embedder:
+  provider: local              # local | openai
+  model: all-MiniLM-L6-v2     # sentence-transformers model (ignored if provider: openai)
+  openai_model: text-embedding-3-small
+
+retriever:
+  top_k: 5
+  chunk_size: 512
+  chunk_overlap: 64
+
+llm:
+  provider: anthropic          # openai | anthropic | ollama
+  model: claude-sonnet-4-6
+  max_tokens: 1024
+  temperature: 0.2
+  ollama_base_url: http://localhost:11434
+
+pipeline:
+  data_dir: data/raw
+  index_dir: data/processed

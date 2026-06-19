@@ -1,0 +1,19 @@
+# Vector store
+faiss-cpu>=1.7.4
+
+# Embeddings
+sentence-transformers>=2.7.0
+openai>=1.30.0
+
+# LLM backends
+anthropic>=0.28.0
+
+# Document parsing
+pymupdf>=1.24.0
+
+# Config
+pyyaml>=6.0.1
+
+# Testing
+pytest>=8.2.0
+pytest-mock>=3.14.0
