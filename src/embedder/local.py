@@ -1,9 +1,10 @@
+from __future__ import annotations
 from .base import BaseEmbedder
 
 
 class LocalEmbedder(BaseEmbedder):
     """Embedder backed by a local sentence-transformers model.
-    
+
     Runs entirely offline — no API key required. Slower than
     API embedders for large corpora but free and private.
 
@@ -16,16 +17,17 @@ class LocalEmbedder(BaseEmbedder):
         self.model_name = model_name
         self._model = None  # lazy-loaded on first use
 
-    def _load(self):
-        # TODO: import and load SentenceTransformer model
-        # from sentence_transformers import SentenceTransformer
-        # self._model = SentenceTransformer(self.model_name)
-        raise NotImplementedError("LocalEmbedder not yet implemented")
+    def _load(self) -> None:
+        if self._model is None:
+            from sentence_transformers import SentenceTransformer
+            self._model = SentenceTransformer(self.model_name)
 
     def embed_documents(self, texts: list[str]) -> list[list[float]]:
-        # TODO: batch encode texts, return as list of lists
-        raise NotImplementedError
+        """Batch-encode a list of document chunks."""
+        self._load()
+        return self._model.encode(texts, convert_to_numpy=True).tolist()
 
     def embed_query(self, text: str) -> list[float]:
-        # TODO: encode single query, return as list
-        raise NotImplementedError
+        """Encode a single query string."""
+        self._load()
+        return self._model.encode([text], convert_to_numpy=True)[0].tolist()
