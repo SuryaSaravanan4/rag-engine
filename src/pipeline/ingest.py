@@ -15,38 +15,72 @@ def load_text_file(path: Path) -> str:
 
 def load_pdf(path: Path) -> str:
     """Extract text from a PDF using PyMuPDF."""
-    # TODO:
-    # import fitz
-    # doc = fitz.open(str(path))
-    # return "\n".join(page.get_text() for page in doc)
-    raise NotImplementedError("PDF loading not yet implemented")
+    import fitz  # PyMuPDF
+    doc = fitz.open(str(path))
+    return "\n".join(page.get_text() for page in doc)
 
 
 def chunk_text(text: str, chunk_size: int = 512, overlap: int = 64) -> list[str]:
     """Split text into overlapping chunks of roughly chunk_size characters.
-    
-    Overlap ensures that context spanning a chunk boundary isn't lost.
+
+    Uses a sliding window with step = chunk_size - overlap so context
+    spanning a chunk boundary is preserved in both adjacent chunks.
+
+    Args:
+        text: Source text to split.
+        chunk_size: Maximum characters per chunk.
+        overlap: Characters shared between consecutive chunks.
+
+    Returns:
+        List of text chunks; final chunk may be shorter than chunk_size.
     """
-    # TODO: sliding window split — step = chunk_size - overlap
-    raise NotImplementedError
+    if chunk_size <= overlap:
+        raise ValueError(f"chunk_size ({chunk_size}) must be greater than overlap ({overlap})")
+    step = chunk_size - overlap
+    return [text[i : i + chunk_size] for i in range(0, len(text), step)]
 
 
 def ingest(input_dir: str, config: dict) -> None:
     """Load all documents from input_dir, chunk, embed, and persist the index.
-    
+
     Args:
         input_dir: Path to folder containing .txt, .md, or .pdf files.
         config: Parsed config.yaml as a dict.
     """
-    # TODO:
-    # 1. Walk input_dir, dispatch to load_text_file or load_pdf
-    # 2. chunk_text each document
-    # 3. embedder = get_embedder(config["embedder"]["provider"], ...)
-    # 4. vectors = embedder.embed_documents(all_chunks)
-    # 5. store = VectorStore(config["pipeline"]["index_dir"])
-    # 6. store.add(documents, vectors)
-    # 7. store.save()
-    raise NotImplementedError
+    from src.embedder import get_embedder
+    from src.retriever.vector_store import VectorStore, Document
+
+    emb_cfg = config["embedder"]
+    embedder = get_embedder(emb_cfg["provider"], emb_cfg)
+
+    chunk_size = config["retriever"]["chunk_size"]
+    overlap = config["retriever"]["chunk_overlap"]
+
+    all_documents: list[Document] = []
+    all_texts: list[str] = []
+
+    for path in sorted(Path(input_dir).iterdir()):
+        if path.suffix == ".pdf":
+            raw = load_pdf(path)
+        elif path.suffix in {".txt", ".md"}:
+            raw = load_text_file(path)
+        else:
+            continue
+
+        chunks = chunk_text(raw, chunk_size=chunk_size, overlap=overlap)
+        for i, chunk in enumerate(chunks):
+            all_documents.append(Document(text=chunk, source=path.name, chunk_index=i))
+            all_texts.append(chunk)
+
+    if not all_texts:
+        print("No supported files found in input directory.")
+        return
+
+    vectors = embedder.embed_documents(all_texts)
+    store = VectorStore(config["pipeline"]["index_dir"])
+    store.add(all_documents, vectors)
+    store.save()
+    print(f"Ingested {len(all_documents)} chunks from {input_dir}.")
 
 
 if __name__ == "__main__":
@@ -60,4 +94,3 @@ if __name__ == "__main__":
         config = yaml.safe_load(f)
 
     ingest(args.input, config)
-    print("Ingestion complete.")
