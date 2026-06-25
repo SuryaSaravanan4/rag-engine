@@ -1,15 +1,11 @@
+from __future__ import annotations
+
 from ..embedder.base import BaseEmbedder
 from .vector_store import VectorStore, SearchResult
 
 
 class Retriever:
-    """Ties an embedder to a vector store to answer top-k retrieval queries.
-    
-    Args:
-        embedder: Any BaseEmbedder implementation.
-        store: A populated VectorStore.
-        top_k: Number of chunks to return per query.
-    """
+    """Ties an embedder to a vector store to answer top-k retrieval queries."""
 
     def __init__(self, embedder: BaseEmbedder, store: VectorStore, top_k: int = 5):
         self.embedder = embedder
@@ -18,14 +14,18 @@ class Retriever:
 
     def retrieve(self, query: str) -> list[SearchResult]:
         """Embed the query and return the top_k most relevant document chunks.
-        
+
+        Returns an empty list when the index is empty so callers don't need
+        to guard against a cold-start index.
+
         Args:
-            query: Raw natural language question from the user.
+            query: Natural-language question or code snippet to search against.
 
         Returns:
-            Ranked list of SearchResult objects.
+            Ranked list of SearchResult objects (closest first).
         """
-        # TODO:
-        # 1. query_vector = self.embedder.embed_query(query)
-        # 2. return self.store.search(query_vector, self.top_k)
-        raise NotImplementedError
+        if self.store.is_empty():
+            return []
+
+        query_vector = self.embedder.embed_query(query)
+        return self.store.search(query_vector, top_k=self.top_k)
