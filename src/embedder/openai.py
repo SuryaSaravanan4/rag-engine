@@ -1,3 +1,4 @@
+import os
 from .base import BaseEmbedder
 
 
@@ -15,16 +16,20 @@ class OpenAIEmbedder(BaseEmbedder):
         self.api_key = api_key
         self._client = None  # lazy-loaded on first use
 
-    def _load(self):
-        # TODO: instantiate openai.OpenAI client
-        # import openai, os
-        # self._client = openai.OpenAI(api_key=self.api_key or os.environ["OPENAI_API_KEY"])
-        raise NotImplementedError("OpenAIEmbedder not yet implemented")
+    def _load(self) -> None:
+        import openai
+        self._client = openai.OpenAI(api_key=self.api_key or os.environ["OPENAI_API_KEY"])
 
     def embed_documents(self, texts: list[str]) -> list[list[float]]:
-        # TODO: call client.embeddings.create, extract .data[i].embedding
-        raise NotImplementedError
+        """Embed a batch of document chunks via the OpenAI Embeddings API."""
+        if self._client is None:
+            self._load()
+        response = self._client.embeddings.create(input=texts, model=self.model)
+        return [item.embedding for item in response.data]
 
     def embed_query(self, text: str) -> list[float]:
-        # TODO: same as embed_documents but single text
-        raise NotImplementedError
+        """Embed a single query string via the OpenAI Embeddings API."""
+        if self._client is None:
+            self._load()
+        response = self._client.embeddings.create(input=[text], model=self.model)
+        return response.data[0].embedding
