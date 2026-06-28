@@ -140,9 +140,9 @@ llm:
 ## Roadmap
 
 - [x] Project scaffold + architecture
-- [ ] Embedder module (local + OpenAI)
-- [ ] FAISS vector store wrapper
-- [ ] Document ingestion pipeline (txt, md, pdf)
+- [x] Embedder module (local + OpenAI)
+- [x] FAISS vector store wrapper
+- [x] Document ingestion pipeline (txt, md, pdf)
 - [ ] Pluggable LLM backends
 - [ ] End-to-end query pipeline
 - [ ] CLI interface
