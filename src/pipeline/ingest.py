@@ -7,6 +7,9 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
+from ..embedder import get_embedder
+from ..retriever.vector_store import VectorStore, Document
+
 
 def load_text_file(path: Path) -> str:
     """Read a plain text or markdown file."""
@@ -32,12 +35,12 @@ def chunk_text(text: str, chunk_size: int = 512, overlap: int = 64) -> list[str]
         overlap: Characters shared between consecutive chunks.
 
     Returns:
-        List of text chunks; final chunk may be shorter than chunk_size.
+        List of non-empty text chunks; final chunk may be shorter than chunk_size.
     """
     if chunk_size <= overlap:
         raise ValueError(f"chunk_size ({chunk_size}) must be greater than overlap ({overlap})")
     step = chunk_size - overlap
-    return [text[i : i + chunk_size] for i in range(0, len(text), step)]
+    return [c for c in (text[i:i + chunk_size] for i in range(0, len(text), step)) if c.strip()]
 
 
 def ingest(input_dir: str, config: dict) -> None:
@@ -47,28 +50,28 @@ def ingest(input_dir: str, config: dict) -> None:
         input_dir: Path to folder containing .txt, .md, or .pdf files.
         config: Parsed config.yaml as a dict.
     """
-    from src.embedder import get_embedder
-    from src.retriever.vector_store import VectorStore, Document
-
-    emb_cfg = config["embedder"]
-    embedder = get_embedder(emb_cfg["provider"], emb_cfg)
+    root = Path(input_dir)
+    if not root.exists():
+        raise FileNotFoundError(f"Input directory not found: {input_dir}")
 
     chunk_size = config["retriever"]["chunk_size"]
-    overlap = config["retriever"]["chunk_overlap"]
+    chunk_overlap = config["retriever"]["chunk_overlap"]
 
     all_documents: list[Document] = []
     all_texts: list[str] = []
 
-    for path in sorted(Path(input_dir).iterdir()):
-        if path.suffix == ".pdf":
-            raw = load_pdf(path)
-        elif path.suffix in {".txt", ".md"}:
+    for path in sorted(root.rglob("*")):
+        if not path.is_file():
+            continue
+        suffix = path.suffix.lower()
+        if suffix in (".txt", ".md"):
             raw = load_text_file(path)
+        elif suffix == ".pdf":
+            raw = load_pdf(path)
         else:
             continue
 
-        chunks = chunk_text(raw, chunk_size=chunk_size, overlap=overlap)
-        for i, chunk in enumerate(chunks):
+        for i, chunk in enumerate(chunk_text(raw, chunk_size=chunk_size, overlap=chunk_overlap)):
             all_documents.append(Document(text=chunk, source=path.name, chunk_index=i))
             all_texts.append(chunk)
 
@@ -76,11 +79,17 @@ def ingest(input_dir: str, config: dict) -> None:
         print("No supported files found in input directory.")
         return
 
+    emb_cfg = config["embedder"]
+    provider = emb_cfg["provider"]
+    # Config uses "model" for local and "openai_model" for openai — map to constructor kwarg.
+    kwargs = {"model_name": emb_cfg["model"]} if provider == "local" else {"model": emb_cfg["openai_model"]}
+    embedder = get_embedder(provider, **kwargs)
+
     vectors = embedder.embed_documents(all_texts)
-    store = VectorStore(config["pipeline"]["index_dir"])
+    store = VectorStore(index_dir=config["pipeline"]["index_dir"])
     store.add(all_documents, vectors)
     store.save()
-    print(f"Ingested {len(all_documents)} chunks from {input_dir}.")
+    print(f"Ingested {len(all_texts)} chunks from {len(set(d.source for d in all_documents))} file(s).")
 
 
 if __name__ == "__main__":
