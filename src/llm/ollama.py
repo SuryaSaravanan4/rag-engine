@@ -24,18 +24,16 @@ class OllamaProvider(BaseModelProvider):
         self.temperature = temperature
 
     def complete(self, system: str, user: str) -> str:
-        # TODO:
-        # import requests
-        # payload = {
-        #     "model": self.model,
-        #     "messages": [
-        #         {"role": "system", "content": system},
-        #         {"role": "user", "content": user},
-        #     ],
-        #     "options": {"temperature": self.temperature},
-        #     "stream": False,
-        # }
-        # resp = requests.post(f"{self.base_url}/api/chat", json=payload)
-        # resp.raise_for_status()
-        # return resp.json()["message"]["content"]
-        raise NotImplementedError("OllamaProvider not yet implemented")
+        import requests
+        payload = {
+            "model": self.model,
+            "messages": [
+                {"role": "system", "content": system},
+                {"role": "user", "content": user},
+            ],
+            "options": {"temperature": self.temperature},
+            "stream": False,
+        }
+        resp = requests.post(f"{self.base_url}/api/chat", json=payload)
+        resp.raise_for_status()
+        return resp.json()["message"]["content"]

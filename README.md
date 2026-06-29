@@ -143,7 +143,7 @@ llm:
 - [x] Embedder module (local + OpenAI)
 - [x] FAISS vector store wrapper
 - [x] Document ingestion pipeline (txt, md, pdf)
-- [ ] Pluggable LLM backends
+- [x] Pluggable LLM backends
 - [ ] End-to-end query pipeline
 - [ ] CLI interface
 - [ ] Unit tests

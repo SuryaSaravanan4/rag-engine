@@ -25,20 +25,18 @@ class AnthropicProvider(BaseModelProvider):
         self._client = None
 
     def _load(self):
-        # TODO:
-        # import anthropic, os
-        # self._client = anthropic.Anthropic(api_key=self.api_key or os.environ["ANTHROPIC_API_KEY"])
-        raise NotImplementedError("AnthropicProvider not yet implemented")
+        import anthropic
+        import os
+        self._client = anthropic.Anthropic(api_key=self.api_key or os.environ["ANTHROPIC_API_KEY"])
 
     def complete(self, system: str, user: str) -> str:
-        # TODO:
-        # if not self._client: self._load()
-        # msg = self._client.messages.create(
-        #     model=self.model,
-        #     max_tokens=self.max_tokens,
-        #     temperature=self.temperature,
-        #     system=system,
-        #     messages=[{"role": "user", "content": user}],
-        # )
-        # return msg.content[0].text
-        raise NotImplementedError
+        if not self._client:
+            self._load()
+        msg = self._client.messages.create(
+            model=self.model,
+            max_tokens=self.max_tokens,
+            temperature=self.temperature,
+            system=system,
+            messages=[{"role": "user", "content": user}],
+        )
+        return msg.content[0].text

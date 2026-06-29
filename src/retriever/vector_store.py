@@ -68,6 +68,10 @@ class VectorStore:
         with open(path / self._DOCS_FILE, "wb") as f:
             pickle.dump(self._documents, f)
 
+    def is_empty(self) -> bool:
+        """Return True if the index has no vectors."""
+        return self._index is None or self._index.ntotal == 0
+
     def load(self) -> None:
         """Load a previously saved index and document list from index_dir."""
         path = Path(self.index_dir)

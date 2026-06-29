@@ -25,22 +25,20 @@ class OpenAIProvider(BaseModelProvider):
         self._client = None
 
     def _load(self):
-        # TODO:
-        # import openai, os
-        # self._client = openai.OpenAI(api_key=self.api_key or os.environ["OPENAI_API_KEY"])
-        raise NotImplementedError("OpenAIProvider not yet implemented")
+        import openai
+        import os
+        self._client = openai.OpenAI(api_key=self.api_key or os.environ["OPENAI_API_KEY"])
 
     def complete(self, system: str, user: str) -> str:
-        # TODO:
-        # if not self._client: self._load()
-        # resp = self._client.chat.completions.create(
-        #     model=self.model,
-        #     max_tokens=self.max_tokens,
-        #     temperature=self.temperature,
-        #     messages=[
-        #         {"role": "system", "content": system},
-        #         {"role": "user", "content": user},
-        #     ],
-        # )
-        # return resp.choices[0].message.content
-        raise NotImplementedError
+        if not self._client:
+            self._load()
+        resp = self._client.chat.completions.create(
+            model=self.model,
+            max_tokens=self.max_tokens,
+            temperature=self.temperature,
+            messages=[
+                {"role": "system", "content": system},
+                {"role": "user", "content": user},
+            ],
+        )
+        return resp.choices[0].message.content
