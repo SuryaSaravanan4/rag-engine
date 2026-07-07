@@ -1,4 +1,4 @@
-from typing import Iterator
+from typing import Any, Iterator
 
 from .base import BaseModelProvider
 
@@ -33,15 +33,15 @@ class OllamaProvider(BaseModelProvider):
         self.max_tokens = max_tokens
         self.timeout = timeout
 
-    def _options(self) -> dict:
-        options = {"temperature": self.temperature}
+    def _options(self) -> dict[str, Any]:
+        options: dict[str, Any] = {"temperature": self.temperature}
         if self.max_tokens is not None:
             options["num_predict"] = self.max_tokens
         return options
 
     def complete(self, system: str, user: str) -> str:
         import requests
-        payload = {
+        payload: dict[str, Any] = {
             "model": self.model,
             "messages": [
                 {"role": "system", "content": system},
@@ -58,7 +58,7 @@ class OllamaProvider(BaseModelProvider):
         import json
         import requests
 
-        payload = {
+        payload: dict[str, Any] = {
             "model": self.model,
             "messages": [
                 {"role": "system", "content": system},

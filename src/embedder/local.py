@@ -1,5 +1,10 @@
 from __future__ import annotations
+from typing import TYPE_CHECKING
+
 from .base import BaseEmbedder
+
+if TYPE_CHECKING:
+    from sentence_transformers import SentenceTransformer
 
 
 class LocalEmbedder(BaseEmbedder):
@@ -15,7 +20,7 @@ class LocalEmbedder(BaseEmbedder):
 
     def __init__(self, model_name: str = "all-MiniLM-L6-v2"):
         self.model_name = model_name
-        self._model = None  # lazy-loaded on first use
+        self._model: "SentenceTransformer | None" = None  # lazy-loaded on first use
 
     def _load(self) -> None:
         if self._model is None:

@@ -1,6 +1,9 @@
-from typing import Iterator
+from typing import TYPE_CHECKING, Iterator
 
 from .base import BaseModelProvider
+
+if TYPE_CHECKING:
+    import anthropic
 
 
 class AnthropicProvider(BaseModelProvider):
@@ -24,9 +27,9 @@ class AnthropicProvider(BaseModelProvider):
         self.max_tokens = max_tokens
         self.temperature = temperature
         self.api_key = api_key
-        self._client = None
+        self._client: "anthropic.Anthropic | None" = None
 
-    def _load(self):
+    def _load(self) -> None:
         from ..env import require_env
         api_key = self.api_key or require_env("ANTHROPIC_API_KEY")
         import anthropic
@@ -43,7 +46,10 @@ class AnthropicProvider(BaseModelProvider):
             system=system,
             messages=[{"role": "user", "content": user}],
         )
-        return msg.content[0].text
+        text = "".join(getattr(block, "text", "") for block in msg.content)
+        if not text:
+            raise ValueError("Anthropic response contained no text content")
+        return text
 
     def stream_complete(self, system: str, user: str) -> Iterator[str]:
         if not self._client:

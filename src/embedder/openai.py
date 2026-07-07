@@ -1,5 +1,10 @@
+from typing import TYPE_CHECKING
+
 from .base import BaseEmbedder
 from ..env import require_env
+
+if TYPE_CHECKING:
+    import openai
 
 
 class OpenAIEmbedder(BaseEmbedder):
@@ -14,7 +19,7 @@ class OpenAIEmbedder(BaseEmbedder):
     def __init__(self, model: str = "text-embedding-3-small", api_key: str | None = None):
         self.model = model
         self.api_key = api_key
-        self._client = None  # lazy-loaded on first use
+        self._client: "openai.OpenAI | None" = None  # lazy-loaded on first use
 
     def _load(self) -> None:
         api_key = self.api_key or require_env("OPENAI_API_KEY")

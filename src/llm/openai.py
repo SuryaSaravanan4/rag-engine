@@ -1,6 +1,9 @@
-from typing import Iterator
+from typing import TYPE_CHECKING, Iterator
 
 from .base import BaseModelProvider
+
+if TYPE_CHECKING:
+    import openai
 
 
 class OpenAIProvider(BaseModelProvider):
@@ -24,9 +27,9 @@ class OpenAIProvider(BaseModelProvider):
         self.max_tokens = max_tokens
         self.temperature = temperature
         self.api_key = api_key
-        self._client = None
+        self._client: "openai.OpenAI | None" = None
 
-    def _load(self):
+    def _load(self) -> None:
         from ..env import require_env
         api_key = self.api_key or require_env("OPENAI_API_KEY")
         import openai
@@ -45,7 +48,10 @@ class OpenAIProvider(BaseModelProvider):
                 {"role": "user", "content": user},
             ],
         )
-        return resp.choices[0].message.content
+        content = resp.choices[0].message.content
+        if content is None:
+            raise ValueError("OpenAI response contained no text content")
+        return content
 
     def stream_complete(self, system: str, user: str) -> Iterator[str]:
         if not self._client:

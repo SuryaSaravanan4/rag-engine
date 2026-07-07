@@ -181,11 +181,8 @@ mypy src
 pytest
 ```
 
-CI (`.github/workflows/ci.yml`) runs `ruff` and the test suite (matrixed
-across Python 3.11 and 3.12) on every push and pull request. `mypy` also
-runs but is currently non-blocking (`continue-on-error`) — the codebase
-hasn't been verified clean against every third-party dependency's type
-stubs yet; flip that off once it has been.
+CI (`.github/workflows/ci.yml`) runs `ruff`, `mypy`, and the test suite
+(matrixed across Python 3.11 and 3.12) on every push and pull request.
 
 ### Running with Docker
 

@@ -18,9 +18,6 @@ jobs:
       - name: ruff
         run: ruff check .
       - name: mypy
-        # Not yet verified clean against a real install of every third-party
-        # dependency — informational until someone confirms and flips this off.
-        continue-on-error: true
         run: mypy src
 
   test:
