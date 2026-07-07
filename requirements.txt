@@ -1,5 +1,6 @@
 # Vector store
 faiss-cpu>=1.7.4
+numpy>=1.26.0
 
 # Embeddings
 sentence-transformers>=2.7.0
@@ -7,6 +8,7 @@ openai>=1.30.0
 
 # LLM backends
 anthropic>=0.28.0
+requests>=2.31.0
 
 # Document parsing
 pymupdf>=1.24.0

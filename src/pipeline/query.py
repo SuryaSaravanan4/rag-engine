@@ -5,6 +5,7 @@ Usage:
 """
 from __future__ import annotations
 import argparse
+from typing import Iterator
 
 from ..embedder import get_embedder
 from ..retriever.vector_store import VectorStore
@@ -24,16 +25,8 @@ def build_augmented_prompt(query: str, context_chunks: list[str]) -> str:
     return f"Context:\n{context}\n\nQuestion: {query}"
 
 
-def query(question: str, config: dict) -> str:
-    """Full RAG pipeline: embed query → retrieve → augment → generate.
-    
-    Args:
-        question: Natural language question from the user.
-        config: Parsed config.yaml as a dict.
-
-    Returns:
-        The model's answer, grounded in retrieved context.
-    """
+def _build_prompt(question: str, config: dict, source: str | list[str] | None) -> str:
+    """Embed the question, retrieve context, and build the augmented prompt."""
     emb_cfg = config["embedder"]
     emb_provider = emb_cfg["provider"]
     emb_kwargs = {"model_name": emb_cfg["model"]} if emb_provider == "local" else {"model": emb_cfg["openai_model"]}
@@ -43,11 +36,13 @@ def query(question: str, config: dict) -> str:
     store.load()
 
     retriever = Retriever(embedder, store, top_k=config["retriever"]["top_k"])
-    results = retriever.retrieve(question)
+    results = retriever.retrieve(question, source=source)
     chunks = [r.document.text for r in results]
 
-    prompt = build_augmented_prompt(question, chunks)
+    return build_augmented_prompt(question, chunks)
 
+
+def _build_provider(config: dict):
     llm_cfg = config["llm"]
     llm_provider = llm_cfg["provider"]
     if llm_provider == "ollama":
@@ -55,6 +50,7 @@ def query(question: str, config: dict) -> str:
             "model": llm_cfg["model"],
             "base_url": llm_cfg.get("ollama_base_url", "http://localhost:11434"),
             "temperature": llm_cfg["temperature"],
+            "max_tokens": llm_cfg.get("max_tokens"),
         }
     else:
         llm_kwargs = {
@@ -62,19 +58,49 @@ def query(question: str, config: dict) -> str:
             "max_tokens": llm_cfg["max_tokens"],
             "temperature": llm_cfg["temperature"],
         }
-    provider = get_provider(llm_provider, **llm_kwargs)
+    return get_provider(llm_provider, **llm_kwargs)
+
+
+def query(question: str, config: dict, source: str | list[str] | None = None) -> str:
+    """Full RAG pipeline: embed query → retrieve → augment → generate.
+
+    Args:
+        question: Natural language question from the user.
+        config: Parsed config.yaml as a dict.
+        source: If given, restrict retrieval to chunk(s) from this source
+            path (or list of paths), relative to the ingested input directory.
+
+    Returns:
+        The model's answer, grounded in retrieved context.
+    """
+    prompt = _build_prompt(question, config, source)
+    provider = _build_provider(config)
     return provider.complete(SYSTEM_PROMPT, prompt)
+
+
+def stream_query(question: str, config: dict, source: str | list[str] | None = None) -> Iterator[str]:
+    """Same as query(), but yields the answer incrementally as it's generated."""
+    prompt = _build_prompt(question, config, source)
+    provider = _build_provider(config)
+    yield from provider.stream_complete(SYSTEM_PROMPT, prompt)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Query the RAG engine.")
     parser.add_argument("question", help="Your question")
     parser.add_argument("--config", default="config.yaml", help="Path to config.yaml")
+    parser.add_argument("--source", help="Restrict retrieval to chunks from this source path (relative to --input, e.g. subdir/file.md)")
+    parser.add_argument("--stream", action="store_true", help="Stream the answer as it's generated")
     args = parser.parse_args()
 
     import yaml
     with open(args.config) as f:
         config = yaml.safe_load(f)
 
-    answer = query(args.question, config)
-    print(answer)
+    if args.stream:
+        for piece in stream_query(args.question, config, source=args.source):
+            print(piece, end="", flush=True)
+        print()
+    else:
+        answer = query(args.question, config, source=args.source)
+        print(answer)

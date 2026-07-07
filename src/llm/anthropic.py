@@ -1,3 +1,5 @@
+from typing import Iterator
+
 from .base import BaseModelProvider
 
 
@@ -25,9 +27,10 @@ class AnthropicProvider(BaseModelProvider):
         self._client = None
 
     def _load(self):
+        from ..env import require_env
+        api_key = self.api_key or require_env("ANTHROPIC_API_KEY")
         import anthropic
-        import os
-        self._client = anthropic.Anthropic(api_key=self.api_key or os.environ["ANTHROPIC_API_KEY"])
+        self._client = anthropic.Anthropic(api_key=api_key)
 
     def complete(self, system: str, user: str) -> str:
         if not self._client:
@@ -40,3 +43,15 @@ class AnthropicProvider(BaseModelProvider):
             messages=[{"role": "user", "content": user}],
         )
         return msg.content[0].text
+
+    def stream_complete(self, system: str, user: str) -> Iterator[str]:
+        if not self._client:
+            self._load()
+        with self._client.messages.stream(
+            model=self.model,
+            max_tokens=self.max_tokens,
+            temperature=self.temperature,
+            system=system,
+            messages=[{"role": "user", "content": user}],
+        ) as stream:
+            yield from stream.text_stream

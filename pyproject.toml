@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "rag-engine"
+version = "0.1.0"
+description = "A lightweight, modular Retrieval-Augmented Generation pipeline."
+requires-python = ">=3.11"
+readme = "README.md"
+license = { text = "MIT" }
+
+[project.scripts]
+rag = "src.cli:main"
+
+[tool.setuptools]
+packages = ["src", "src.embedder", "src.retriever", "src.llm", "src.pipeline"]

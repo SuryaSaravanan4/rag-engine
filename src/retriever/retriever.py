@@ -12,7 +12,7 @@ class Retriever:
         self.store = store
         self.top_k = top_k
 
-    def retrieve(self, query: str) -> list[SearchResult]:
+    def retrieve(self, query: str, source: str | list[str] | None = None) -> list[SearchResult]:
         """Embed the query and return the top_k most relevant document chunks.
 
         Returns an empty list when the index is empty so callers don't need
@@ -20,6 +20,8 @@ class Retriever:
 
         Args:
             query: Natural-language question or code snippet to search against.
+            source: If given, restrict results to chunk(s) from this source
+                path (or list of paths), relative to the ingested input directory.
 
         Returns:
             Ranked list of SearchResult objects (closest first).
@@ -28,4 +30,4 @@ class Retriever:
             return []
 
         query_vector = self.embedder.embed_query(query)
-        return self.store.search(query_vector, top_k=self.top_k)
+        return self.store.search(query_vector, top_k=self.top_k, source=source)

@@ -46,7 +46,9 @@ At CoverMyMeds I designed a query layer that conditioned LLM responses on retrie
 - **FAISS vector store** — fast approximate nearest-neighbor search, persisted to disk
 - **Pluggable LLM backends** — one config flag switches between OpenAI, Anthropic Claude, and local Ollama
 - **Clean pipeline interface** — `pipeline.query(question)` handles the full retrieve → augment → generate flow
-- **CLI** — ingest a folder of `.txt`/`.md`/`.pdf` files and query from the terminal
+- **Streaming responses** — `--stream` prints tokens as they're generated instead of waiting for the full answer
+- **Metadata filtering** — `--source` restricts retrieval to chunks from a specific ingested file
+- **CLI** — a single `rag` command (`rag ingest`, `rag query`) for ingesting a folder of `.txt`/`.md`/`.pdf` files and querying from the terminal
 
 ---
 
@@ -57,6 +59,7 @@ At CoverMyMeds I designed a query layer that conditioned LLM responses on retrie
 git clone https://github.com/YOUR_USERNAME/rag-engine.git
 cd rag-engine
 pip install -r requirements.txt
+pip install -e .   # installs the `rag` CLI command
 
 # 2. Set your API key (or use Ollama for fully local)
 export OPENAI_API_KEY=sk-...
@@ -64,11 +67,18 @@ export OPENAI_API_KEY=sk-...
 export ANTHROPIC_API_KEY=sk-ant-...
 
 # 3. Ingest a corpus
-python -m src.pipeline.ingest --input data/raw/
+rag ingest --input data/raw/
 
 # 4. Query
-python -m src.pipeline.query "What does the /users endpoint return?"
+rag query "What does the /users endpoint return?"
+
+# Stream the answer, or restrict retrieval to one source file
+rag query "What does the /users endpoint return?" --stream
+rag query "What does the /users endpoint return?" --source openapi.yaml
 ```
+
+Without installing the package, the same commands work as modules:
+`python -m src.pipeline.ingest --input data/raw/` and `python -m src.pipeline.query "..."`.
 
 ---
 
@@ -77,6 +87,7 @@ python -m src.pipeline.query "What does the /users endpoint return?"
 ```
 rag-engine/
 ├── src/
+│   ├── cli.py                # Unified `rag` CLI (ingest / query subcommands)
 │   ├── embedder/
 │   │   ├── __init__.py
 │   │   ├── base.py          # Abstract Embedder interface
@@ -84,18 +95,18 @@ rag-engine/
 │   │   └── openai.py        # OpenAI embeddings API
 │   ├── retriever/
 │   │   ├── __init__.py
-│   │   ├── vector_store.py  # FAISS wrapper (index, search, persist)
+│   │   ├── vector_store.py  # FAISS wrapper (index, search, persist, source filtering)
 │   │   └── retriever.py     # Top-k retriever logic
 │   ├── llm/
 │   │   ├── __init__.py
-│   │   ├── base.py          # Abstract ModelProvider interface
+│   │   ├── base.py          # Abstract ModelProvider interface (complete + stream_complete)
 │   │   ├── openai.py        # OpenAI chat completions
 │   │   ├── anthropic.py     # Anthropic Messages API
 │   │   └── ollama.py        # Local Ollama backend
 │   └── pipeline/
 │       ├── __init__.py
 │       ├── ingest.py        # Document loading + chunking + embedding
-│       └── query.py         # Query → retrieve → augment → generate
+│       └── query.py         # Query → retrieve → augment → generate (+ streaming)
 ├── tests/
 │   ├── test_embedder.py
 │   ├── test_retriever.py
@@ -107,6 +118,7 @@ rag-engine/
 ├── docs/
 │   └── design.md            # Architecture decisions + tradeoffs
 ├── config.yaml              # Runtime config (model, top-k, chunk size)
+├── pyproject.toml            # Packaging + `rag` console script entry point
 ├── requirements.txt
 ├── .gitignore
 └── README.md
@@ -144,11 +156,11 @@ llm:
 - [x] FAISS vector store wrapper
 - [x] Document ingestion pipeline (txt, md, pdf)
 - [x] Pluggable LLM backends
-- [ ] End-to-end query pipeline
-- [ ] CLI interface
-- [ ] Unit tests
-- [ ] Streaming responses
-- [ ] Metadata filtering on retrieval
+- [x] End-to-end query pipeline
+- [x] CLI interface
+- [x] Unit tests
+- [x] Streaming responses
+- [x] Metadata filtering on retrieval
 
 ---
 

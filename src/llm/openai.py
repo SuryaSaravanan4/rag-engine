@@ -1,3 +1,5 @@
+from typing import Iterator
+
 from .base import BaseModelProvider
 
 
@@ -25,9 +27,10 @@ class OpenAIProvider(BaseModelProvider):
         self._client = None
 
     def _load(self):
+        from ..env import require_env
+        api_key = self.api_key or require_env("OPENAI_API_KEY")
         import openai
-        import os
-        self._client = openai.OpenAI(api_key=self.api_key or os.environ["OPENAI_API_KEY"])
+        self._client = openai.OpenAI(api_key=api_key)
 
     def complete(self, system: str, user: str) -> str:
         if not self._client:
@@ -42,3 +45,21 @@ class OpenAIProvider(BaseModelProvider):
             ],
         )
         return resp.choices[0].message.content
+
+    def stream_complete(self, system: str, user: str) -> Iterator[str]:
+        if not self._client:
+            self._load()
+        stream = self._client.chat.completions.create(
+            model=self.model,
+            max_tokens=self.max_tokens,
+            temperature=self.temperature,
+            messages=[
+                {"role": "system", "content": system},
+                {"role": "user", "content": user},
+            ],
+            stream=True,
+        )
+        for chunk in stream:
+            delta = chunk.choices[0].delta.content
+            if delta:
+                yield delta

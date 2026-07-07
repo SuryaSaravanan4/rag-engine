@@ -1,5 +1,5 @@
-import os
 from .base import BaseEmbedder
+from ..env import require_env
 
 
 class OpenAIEmbedder(BaseEmbedder):
@@ -17,8 +17,9 @@ class OpenAIEmbedder(BaseEmbedder):
         self._client = None  # lazy-loaded on first use
 
     def _load(self) -> None:
+        api_key = self.api_key or require_env("OPENAI_API_KEY")
         import openai
-        self._client = openai.OpenAI(api_key=self.api_key or os.environ["OPENAI_API_KEY"])
+        self._client = openai.OpenAI(api_key=api_key)
 
     def embed_documents(self, texts: list[str]) -> list[list[float]]:
         """Embed a batch of document chunks via the OpenAI Embeddings API."""

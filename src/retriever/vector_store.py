@@ -47,21 +47,46 @@ class VectorStore:
         self._index.add(array)
         self._documents.extend(documents)
 
-    def search(self, query_vector: list[float], top_k: int = 5) -> list[SearchResult]:
-        """Return the top_k most similar documents to the query vector."""
+    def search(
+        self,
+        query_vector: list[float],
+        top_k: int = 5,
+        source: str | list[str] | None = None,
+    ) -> list[SearchResult]:
+        """Return the top_k most similar documents to the query vector.
+
+        Args:
+            query_vector: Dense embedding of the query.
+            top_k: Maximum number of results to return.
+            source: If given, restrict results to document(s) whose `source`
+                matches this path (or is in this list of paths). Since FAISS's
+                flat index has no native filtering, this over-searches the
+                full index and filters the ranked results — O(ntotal) per
+                query rather than O(top_k log ntotal), so filtered queries
+                won't scale as well as unfiltered ones on very large corpora.
+        """
         if self._index is None or self._index.ntotal == 0:
             return []
+        allowed = {source} if isinstance(source, str) else (set(source) if source is not None else None)
         array = np.array([query_vector], dtype=np.float32)
-        k = min(top_k, self._index.ntotal)
+        k = self._index.ntotal if allowed is not None else min(top_k, self._index.ntotal)
         distances, indices = self._index.search(array, k)
-        return [
-            SearchResult(document=self._documents[i], score=float(distances[0][rank]))
-            for rank, i in enumerate(indices[0])
-            if i != -1
-        ]
+        results = []
+        for rank, i in enumerate(indices[0]):
+            if i == -1:
+                continue
+            document = self._documents[i]
+            if allowed is not None and document.source not in allowed:
+                continue
+            results.append(SearchResult(document=document, score=float(distances[0][rank])))
+            if len(results) >= top_k:
+                break
+        return results
 
     def save(self) -> None:
         """Persist the FAISS index and document metadata to index_dir."""
+        if self._index is None:
+            raise ValueError("Cannot save an empty VectorStore — call add() first.")
         path = Path(self.index_dir)
         path.mkdir(parents=True, exist_ok=True)
         faiss.write_index(self._index, str(path / self._INDEX_FILE))

@@ -71,8 +71,9 @@ def ingest(input_dir: str, config: dict) -> None:
         else:
             continue
 
+        source = path.relative_to(root).as_posix()
         for i, chunk in enumerate(chunk_text(raw, chunk_size=chunk_size, overlap=chunk_overlap)):
-            all_documents.append(Document(text=chunk, source=path.name, chunk_index=i))
+            all_documents.append(Document(text=chunk, source=source, chunk_index=i))
             all_texts.append(chunk)
 
     if not all_texts:
