@@ -39,3 +39,6 @@ Thumbs.db
 .pytest_cache/
 .coverage
 htmlcov/
+
+# Internal working notes — not published with the repo
+docs/tradeoffs.md
