@@ -25,6 +25,7 @@ class OpenAIEmbedder(BaseEmbedder):
         """Embed a batch of document chunks via the OpenAI Embeddings API."""
         if self._client is None:
             self._load()
+        assert self._client is not None
         response = self._client.embeddings.create(input=texts, model=self.model)
         return [item.embedding for item in response.data]
 
@@ -32,5 +33,6 @@ class OpenAIEmbedder(BaseEmbedder):
         """Embed a single query string via the OpenAI Embeddings API."""
         if self._client is None:
             self._load()
+        assert self._client is not None
         response = self._client.embeddings.create(input=[text], model=self.model)
         return response.data[0].embedding

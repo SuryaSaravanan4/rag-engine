@@ -35,6 +35,7 @@ class OpenAIProvider(BaseModelProvider):
     def complete(self, system: str, user: str) -> str:
         if not self._client:
             self._load()
+        assert self._client is not None
         resp = self._client.chat.completions.create(
             model=self.model,
             max_tokens=self.max_tokens,
@@ -49,6 +50,7 @@ class OpenAIProvider(BaseModelProvider):
     def stream_complete(self, system: str, user: str) -> Iterator[str]:
         if not self._client:
             self._load()
+        assert self._client is not None
         stream = self._client.chat.completions.create(
             model=self.model,
             max_tokens=self.max_tokens,

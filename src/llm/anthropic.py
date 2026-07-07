@@ -35,6 +35,7 @@ class AnthropicProvider(BaseModelProvider):
     def complete(self, system: str, user: str) -> str:
         if not self._client:
             self._load()
+        assert self._client is not None
         msg = self._client.messages.create(
             model=self.model,
             max_tokens=self.max_tokens,
@@ -47,6 +48,7 @@ class AnthropicProvider(BaseModelProvider):
     def stream_complete(self, system: str, user: str) -> Iterator[str]:
         if not self._client:
             self._load()
+        assert self._client is not None
         with self._client.messages.stream(
             model=self.model,
             max_tokens=self.max_tokens,

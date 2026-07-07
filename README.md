@@ -1,5 +1,9 @@
 # rag-engine
 
+[![CI](https://github.com/SuryaSaravanan4/rag-engine/actions/workflows/ci.yml/badge.svg)](https://github.com/SuryaSaravanan4/rag-engine/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue)](pyproject.toml)
+
 A lightweight, modular Retrieval-Augmented Generation (RAG) pipeline built from scratch in Python.
 
 Feed it a corpus of documents. Ask it a question. It retrieves the most relevant context and conditions an LLM's response on real source material — no hallucinated endpoints, no parametric guessing.
@@ -88,6 +92,7 @@ Without installing the package, the same commands work as modules:
 rag-engine/
 ├── src/
 │   ├── cli.py                # Unified `rag` CLI (ingest / query subcommands)
+│   ├── env.py                # require_env() — clear errors for missing API keys
 │   ├── embedder/
 │   │   ├── __init__.py
 │   │   ├── base.py          # Abstract Embedder interface
@@ -111,15 +116,22 @@ rag-engine/
 │   ├── test_embedder.py
 │   ├── test_retriever.py
 │   ├── test_llm.py
-│   └── test_pipeline.py
+│   ├── test_pipeline.py
+│   └── test_cli.py
 ├── data/
 │   ├── raw/                 # Drop source documents here
 │   └── processed/           # FAISS index + metadata stored here
 ├── docs/
 │   └── design.md            # Architecture decisions + tradeoffs
+├── .github/
+│   ├── workflows/ci.yml     # Lint (ruff/mypy) + test matrix (3.11, 3.12)
+│   └── dependabot.yml       # Weekly dependency update PRs
 ├── config.yaml              # Runtime config (model, top-k, chunk size)
-├── pyproject.toml            # Packaging + `rag` console script entry point
+├── pyproject.toml            # Packaging + `rag` console script entry point + tool config
 ├── requirements.txt
+├── Dockerfile
+├── .dockerignore
+├── LICENSE
 ├── .gitignore
 └── README.md
 ```
@@ -149,6 +161,44 @@ llm:
 
 ---
 
+## Development
+
+Install dev tooling (already included in `requirements.txt`):
+
+```bash
+pip install -r requirements.txt
+pip install -e .
+```
+
+```bash
+# Lint
+ruff check .
+
+# Type-check (informational for now — see CI notes below)
+mypy src
+
+# Run tests with coverage (configured by default in pyproject.toml)
+pytest
+```
+
+CI (`.github/workflows/ci.yml`) runs `ruff` and the test suite (matrixed
+across Python 3.11 and 3.12) on every push and pull request. `mypy` also
+runs but is currently non-blocking (`continue-on-error`) — the codebase
+hasn't been verified clean against every third-party dependency's type
+stubs yet; flip that off once it has been.
+
+### Running with Docker
+
+No local Python setup required:
+
+```bash
+docker build -t rag-engine .
+docker run --rm -e ANTHROPIC_API_KEY -v "$(pwd)/data:/app/data" rag-engine ingest --input data/raw
+docker run --rm -e ANTHROPIC_API_KEY -v "$(pwd)/data:/app/data" rag-engine query "What does the /users endpoint return?"
+```
+
+---
+
 ## Roadmap
 
 - [x] Project scaffold + architecture
@@ -161,6 +211,7 @@ llm:
 - [x] Unit tests
 - [x] Streaming responses
 - [x] Metadata filtering on retrieval
+- [x] CI (lint + test matrix), Dependabot, Docker image, LICENSE
 
 ---
 
@@ -172,6 +223,10 @@ llm:
 - **OpenAI / Anthropic Python SDKs** — LLM backends
 - **PyMuPDF** — PDF parsing
 - **PyYAML** — config
+- **pytest / pytest-cov** — testing + coverage
+- **ruff / mypy** — linting + type checking
+- **GitHub Actions / Dependabot** — CI and dependency updates
+- **Docker** — containerized runtime
 
 ---
 

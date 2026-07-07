@@ -1,0 +1,15 @@
+.git
+.github
+.pytest_cache
+__pycache__
+**/__pycache__
+*.pyc
+*.egg-info
+tests
+data/raw/*
+data/processed/*
+!data/raw/.gitkeep
+.env
+.env.local
+Dockerfile
+.dockerignore

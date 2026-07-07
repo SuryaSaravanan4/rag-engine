@@ -25,9 +25,11 @@ class LocalEmbedder(BaseEmbedder):
     def embed_documents(self, texts: list[str]) -> list[list[float]]:
         """Batch-encode a list of document chunks."""
         self._load()
+        assert self._model is not None
         return self._model.encode(texts, convert_to_numpy=True).tolist()
 
     def embed_query(self, text: str) -> list[float]:
         """Encode a single query string."""
         self._load()
+        assert self._model is not None
         return self._model.encode([text], convert_to_numpy=True)[0].tolist()
