@@ -10,9 +10,11 @@ retriever:
 
 llm:
   provider: anthropic          # openai | anthropic | ollama
-  model: claude-sonnet-4-6
+  model: claude-sonnet-5
   max_tokens: 1024
-  temperature: 0.2
+  temperature: 0.2             # ignored by Claude models that removed it (Opus 4.7+, Sonnet 5+)
+  # effort: medium             # Anthropic only — low | medium | high | xhigh | max.
+                               # Replaces temperature as the depth control on those models.
   ollama_base_url: http://localhost:11434
 
 pipeline:

@@ -122,7 +122,8 @@ rag-engine/
 │   ├── raw/                 # Drop source documents here
 │   └── processed/           # FAISS index + metadata stored here
 ├── docs/
-│   └── design.md            # Architecture decisions + tradeoffs
+│   ├── design.md            # Architecture decisions + tradeoffs
+│   └── roadmap.md           # Deferred work, in priority order
 ├── .github/
 │   ├── workflows/ci.yml     # Lint (ruff/mypy) + test matrix (3.11, 3.12)
 │   └── dependabot.yml       # Weekly dependency update PRs
@@ -154,10 +155,16 @@ retriever:
 
 llm:
   provider: anthropic          # openai | anthropic | ollama
-  model: claude-sonnet-4-6
+  model: claude-sonnet-5
   max_tokens: 1024
-  temperature: 0.2
+  temperature: 0.2             # ignored by Claude models that removed it
+  # effort: medium             # Anthropic only — low | medium | high | xhigh | max
 ```
+
+Newer Claude models (Opus 4.7+, Sonnet 5+) removed `temperature` — sending it
+returns a 400. The Anthropic backend drops it automatically for those models, so
+a single `config.yaml` works across every backend; use `effort` to control
+response depth on them instead.
 
 ---
 
@@ -209,6 +216,10 @@ docker run --rm -e ANTHROPIC_API_KEY -v "$(pwd)/data:/app/data" rag-engine query
 - [x] Streaming responses
 - [x] Metadata filtering on retrieval
 - [x] CI (lint + test matrix), Dependabot, Docker image, LICENSE
+
+What's deliberately **not** done yet — and why — is in
+[`docs/roadmap.md`](docs/roadmap.md). The largest gap is a retrieval evaluation
+harness: the current tests verify plumbing, not retrieval quality.
 
 ---
 

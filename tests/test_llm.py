@@ -66,6 +66,90 @@ def test_anthropic_complete_calls_api(monkeypatch):
     assert captured["messages"] == [{"role": "user", "content": "user prompt"}]
 
 
+def test_accepts_sampling_params_by_model():
+    from src.llm.anthropic import accepts_sampling_params
+
+    # Models that removed temperature — sending it returns a 400.
+    assert not accepts_sampling_params("claude-opus-4-8")
+    assert not accepts_sampling_params("claude-opus-4-7")
+    assert not accepts_sampling_params("claude-sonnet-5")
+    assert not accepts_sampling_params("claude-fable-5")
+
+    # Models that still accept it, plus unknown strings (conservative default).
+    assert accepts_sampling_params("claude-sonnet-4-6")
+    assert accepts_sampling_params("claude-opus-4-6")
+    assert accepts_sampling_params("claude-haiku-4-5")
+    assert accepts_sampling_params("claude-test")
+
+
+def _fake_anthropic_client(monkeypatch, captured):
+    """Install a fake anthropic SDK that records create()/stream() kwargs."""
+
+    class FakeStreamCtx:
+        text_stream = iter(["ok"])
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *exc):
+            return False
+
+    class FakeMessages:
+        def create(self, **kwargs):
+            captured.update(kwargs)
+            return types.SimpleNamespace(content=[types.SimpleNamespace(text="ok")])
+
+        def stream(self, **kwargs):
+            captured.update(kwargs)
+            return FakeStreamCtx()
+
+    class FakeClient:
+        messages = FakeMessages()
+
+    monkeypatch.setitem(sys.modules, "anthropic", types.SimpleNamespace(Anthropic=lambda api_key: FakeClient()))
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
+
+
+def test_anthropic_omits_temperature_for_models_that_reject_it(monkeypatch):
+    """Regression: temperature on Opus 4.7+/Sonnet 5+ returns a 400 from the API."""
+    from src.llm.anthropic import AnthropicProvider
+
+    captured = {}
+    _fake_anthropic_client(monkeypatch, captured)
+
+    AnthropicProvider(model="claude-opus-4-8", temperature=0.2).complete("sys", "user")
+    assert "temperature" not in captured
+
+    # Streaming builds the same payload, so it must drop it too.
+    captured.clear()
+    list(AnthropicProvider(model="claude-opus-4-8", temperature=0.2).stream_complete("sys", "user"))
+    assert "temperature" not in captured
+
+
+def test_anthropic_sends_temperature_for_models_that_accept_it(monkeypatch):
+    from src.llm.anthropic import AnthropicProvider
+
+    captured = {}
+    _fake_anthropic_client(monkeypatch, captured)
+
+    AnthropicProvider(model="claude-sonnet-4-6", temperature=0.4).complete("sys", "user")
+    assert captured["temperature"] == 0.4
+
+
+def test_anthropic_sends_effort_only_when_set(monkeypatch):
+    from src.llm.anthropic import AnthropicProvider
+
+    captured = {}
+    _fake_anthropic_client(monkeypatch, captured)
+
+    AnthropicProvider(model="claude-opus-4-8").complete("sys", "user")
+    assert "output_config" not in captured
+
+    captured.clear()
+    AnthropicProvider(model="claude-opus-4-8", effort="medium").complete("sys", "user")
+    assert captured["output_config"] == {"effort": "medium"}
+
+
 def test_anthropic_stream_complete_yields_text(monkeypatch):
     from src.llm.anthropic import AnthropicProvider
 
