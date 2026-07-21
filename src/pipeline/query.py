@@ -58,6 +58,10 @@ def _build_provider(config: dict):
             "max_tokens": llm_cfg["max_tokens"],
             "temperature": llm_cfg["temperature"],
         }
+        # effort is Anthropic-only — the replacement for temperature on models
+        # that no longer accept it. Same leaky-edge tradeoff as ollama above.
+        if llm_provider == "anthropic" and llm_cfg.get("effort") is not None:
+            llm_kwargs["effort"] = llm_cfg["effort"]
     return get_provider(llm_provider, **llm_kwargs)
 
 
