@@ -1,12 +1,27 @@
+---
+title: RAG Engine
+emoji: 🔎
+colorFrom: indigo
+colorTo: blue
+sdk: gradio
+sdk_version: 5.50.0
+app_file: app.py
+pinned: false
+license: mit
+---
+
 # rag-engine
 
 [![CI](https://github.com/SuryaSaravanan4/rag-engine/actions/workflows/ci.yml/badge.svg)](https://github.com/SuryaSaravanan4/rag-engine/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue)](pyproject.toml)
+[![Hugging Face Space](https://img.shields.io/badge/%F0%9F%A4%97%20demo-live-blue)](https://huggingface.co/spaces/SuryaSaravanan4/rag-engine)
 
 A lightweight, modular Retrieval-Augmented Generation (RAG) pipeline built from scratch in Python.
 
 Feed it a corpus of documents. Ask it a question. It retrieves the most relevant context and conditions an LLM's response on real source material — no hallucinated endpoints, no parametric guessing.
+
+**▶️ [Try the live demo](https://huggingface.co/spaces/SuryaSaravanan4/rag-engine)** — a hosted Gradio front-end (`app.py`) over a sample API-reference corpus. Every answer shows the retrieved chunks it was grounded in. Deploy your own with [`docs/deploy-hf-space.md`](docs/deploy-hf-space.md).
 
 ---
 
